@@ -52,11 +52,14 @@
         <script type="text/javascript">
             var camera, scene, renderer, controls;
             var terrain_mesh, water_mesh, water_height = 0.25;
-            var terrain_detail = 6, terrain_roughness = 2.0;
+            var terrain_detail = 5, terrain_roughness = 3.8;
             var terrain;
+            var audio_variance = 0.95;
+            var vary_offset = 5;
             var animating = false;
             var beat_switching = false;
             var song = "harder.mp3";
+            var in_switch = false;
 
             function Terrain(detail) {
                 this.size = Math.pow(2, detail) + 1;
@@ -172,15 +175,27 @@
                 //water_mesh.scale.z = (min_height+max_height)/(2*256);
                 //terrain_mesh.add(water_mesh);
             }
-            Terrain.prototype.vary = function (volume) {
+            Terrain.prototype.vary = function (volume, frequencies) {
                 var self = this;
+                console.log(frequencies[frequencies.length * 2 / 4]);
                 var volume_offset = volume / 65.0;
                 var terrain_geometry = new THREE.PlaneGeometry(512, 512, this.size - 1, this.size - 1);
                 for (var y = 0; y < this.size; y++) {
                     for (var x = 0; x < this.size; x++) {
+                        var size = 1;
+                        var ave = average([
+                            self.get(x - size, y - size), // upper left
+                            self.get(x + size, y - size), // upper right
+                            self.get(x + size, y + size), // lower right
+                            self.get(x - size, y + size), // lower left
+                            self.get(x, y - size), // top
+                            self.get(x + size, y), // right
+                            self.get(x, y + size), // bottom
+                            self.get(x - size, y) // left
+                        ]);
                         var height_val = this.get(x, y);
-                        var change_val = volume_offset * (Math.floor(Math.random() * 5) - 2);
-                        this.set(x,y,height_val + change_val);
+                        var change_val = volume_offset * (Math.floor(Math.random() * (2 * vary_offset + 1)) - vary_offset);
+                        this.set(x,y, audio_variance * height_val + (1.0 - audio_variance) * ave + change_val);
                         terrain_geometry.vertices[y * this.size + x].z = this.get(x,y);
                     }
                 }
@@ -197,6 +212,16 @@
 
                 scene.add(terrain_mesh);
 
+
+                function average(values) {
+                    var valid = values.filter(function (val) {
+                        return val !== -1;
+                    });
+                    var total = valid.reduce(function (sum, val) {
+                        return sum + val;
+                    }, 0);
+                    return total / valid.length;
+                }
             }
 
             function init() {
@@ -224,8 +249,15 @@
                 gui.add(this, 'terrain_detail', 2, 8).name("Detail").listen().onFinishChange(function(value) {
                     generate();
                 });
+
+                gui.add(this, 'vary_offset', 1, 8).name("Offset").listen().onFinishChange(function(value) {
+                    //generate();
+                });
                 gui.add(this, 'terrain_roughness', 0, 10).name("Roughness").onFinishChange(function(value) {
                     generate();
+                });
+                gui.add(this, 'audio_variance', 0.8, 1).name("Audio Variance").onFinishChange(function(value) {
+                    //generate();
                 });
                 gui.add(this, "generate").name("Generate");
                 //gui.add(this, "vary").name("Vary");
@@ -266,11 +298,15 @@
                 terrain.generate(terrain_roughness);
                 terrain.addMesh();
             };
-            function vary(volume) {
+            function vary(volume, frequencies) {
                 //console.log(volume)
-                terrain.vary(volume);
-                if (beat_switching && volume > 50.0){
+                terrain.vary(volume, frequencies);
+                if (beat_switching && frequencies[0] > 253.0 && ! in_switch){
+                    in_switch = true;
                     generate();
+                }
+                if (beat_switching && !(frequencies[0] > 253.0) ){
+                    in_switch = false;
                 }
             }
 
@@ -447,7 +483,7 @@
         ctx.fillRect(0,170-average,25,170+average);
         ctx.fillRect(30,170-average2,25,170+average2);
         if (animating) {
-            vary((average + average2) / 2);
+            vary((average + average2) / 2, array);
         }
 
     }
