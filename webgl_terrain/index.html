@@ -36,6 +36,7 @@
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.0/jquery.min.js"></script>
     </head>
     <body>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.3/chroma.min.js"></script>
         <script type="text/javascript" src="js/three.r67/three.js"></script>
         <script type="text/javascript" src="js/three.r67/TrackballControls.js"></script>
         <script type="text/javascript" src="js/three.r67/Detector.js"></script>
@@ -51,7 +52,7 @@
             var animating = false;
             var alter_vary = false;
             var beat_switching = false;
-            var song = "harder.mp3";
+            var song = "dropit_clean.mp3";
             var in_switch = false;
             var high_freq = false;
             var pin_corners = true;
@@ -183,6 +184,7 @@
                 terrain_geometry.computeVertexNormals();
 
                 scene.remove(terrain_mesh);
+                var scale = chroma.scale(["#74909C","#E76462"]).mode('lch');
 
                 for ( var i = 0; i < terrain_geometry.faces.length; i ++ ) {
 
@@ -190,10 +192,10 @@
                     //var height = (Math.max(Math.max(terrain_geometry.vertices[face.a].z,terrain_geometry.vertices[face.b].z),terrain_geometry.vertices[face.c].z) );
 
                     var height = (terrain_geometry.vertices[face.a].z+terrain_geometry.vertices[face.b].z+terrain_geometry.vertices[face.c].z) / 3;
-                    var color_index = Math.min(Math.max((height + 255)/(3 * 255), 0), 1);
+                    var color_index = Math.min(Math.max(height/( 255), 0), 1);
                     // use color_index as a gradient value
                     //face.color.setHex( color_index * 0x0000ff );
-                    face.color.setHex(getGradientColor("#061161","#780206",color_index));
+                    face.color.setHex(parseInt(scale(color_index).hex().slice(1), 16));
 
                 }
                 //terrain_material  = new THREE.MeshNormalMaterial();
@@ -225,7 +227,7 @@
                         terrain_geometry.vertices[y * this.size + x].z = this.get(x,y);
                     }
                 }
-                
+
                 this.refresh(terrain_geometry);
 
                 function divide(size) {
@@ -296,7 +298,7 @@
                     }
                 }
 
-                
+
                 this.refresh(terrain_geometry);
                 //water_mesh = new THREE.Mesh(water_geometry, water_material);
                 //water_mesh.scale.z = (min_height+max_height)/(2*256);
@@ -327,7 +329,7 @@
                     }
                 }
 
-                
+
                 this.refresh(terrain_geometry);
 
 
@@ -349,16 +351,15 @@
                 renderer = new THREE.WebGLRenderer({
                     antialias: true
                 });
-                renderer.setClearColor(0x333366, 1.0);
+                renderer.setClearColor(0xBEC19D, 1.0);
                 renderer.setSize(window.innerWidth, window.innerHeight);
                 document.body.appendChild(renderer.domElement);
 
                 scene = new THREE.Scene();
+                scene.fog = new THREE.Fog(0xBEC19D, 0.015, 1000);
 
-                camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 1, 1000);
-                camera.zoom = 0.5;
-                camera.position.y = 100;
-                camera.position.z = 100;
+                camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
+                camera.zoom = 0.3;
 
                 var ambient_light = new THREE.AmbientLight(0xcccccc);
                 scene.add(ambient_light);
@@ -400,6 +401,10 @@
                 controls.dynamicDampingFactor = 0.4;
                 controls.minDistance = 300;
                 controls.maxDistance = 600;
+                camera.position.x = -5450;
+                camera.position.y = 3500;
+                camera.position.z = 0;
+                controls.target = new THREE.Vector3(100, 100, 0);
             }
 
             function onWindowResize() {
@@ -427,7 +432,7 @@
                 //console.log(volume)
                 if (alter_vary){
                     terrain.alter_vary(volume,frequencies);
-                } 
+                }
                 if (true_vary){
                     terrain.vary(volume, frequencies);
                 }
@@ -442,50 +447,6 @@
                     in_switch = false;
                 }
             }
-             getGradientColor = function(start_color, end_color, percent) {
-               // strip the leading # if it's there
-               start_color = start_color.replace(/^\s*#|\s*$/g, '');
-               end_color = end_color.replace(/^\s*#|\s*$/g, '');
-
-               // convert 3 char codes --> 6, e.g. `E0F` --> `EE00FF`
-               if(start_color.length == 3){
-                 start_color = start_color.replace(/(.)/g, '$1$1');
-               }
-
-               if(end_color.length == 3){
-                 end_color = end_color.replace(/(.)/g, '$1$1');
-               }
-
-               // get colors
-               var start_red = parseInt(start_color.substr(0, 2), 16),
-                   start_green = parseInt(start_color.substr(2, 2), 16),
-                   start_blue = parseInt(start_color.substr(4, 2), 16);
-
-               var end_red = parseInt(end_color.substr(0, 2), 16),
-                   end_green = parseInt(end_color.substr(2, 2), 16),
-                   end_blue = parseInt(end_color.substr(4, 2), 16);
-
-               // calculate new color
-               var diff_red = end_red - start_red;
-               var diff_green = end_green - start_green;
-               var diff_blue = end_blue - start_blue;
-
-               diff_red = ( (diff_red * percent) + start_red ).toString(16).split('.')[0];
-               diff_green = ( (diff_green * percent) + start_green ).toString(16).split('.')[0];
-               diff_blue = ( (diff_blue * percent) + start_blue ).toString(16).split('.')[0];
-
-               // ensure 2 digits by color
-               if( diff_red.length == 1 )
-                 diff_red = '0' + diff_red
-
-               if( diff_green.length == 1 )
-                 diff_green = '0' + diff_green
-
-               if( diff_blue.length == 1 )
-                 diff_blue = '0' + diff_blue
-
-               return parseInt(diff_red + diff_green + diff_blue,16);
-             };
             function freq_analysis(volume, frequencies) {
                 //console.log(frequencies.length);
                 //synth tone
@@ -506,7 +467,7 @@
                 for (var i = 0; i < frequencies.length; i++){
                     if (frequencies[i] >= prev_frequency[i]){
                         peak_height[i] += frequencies[i] - prev_frequency[i];
-                        peak_width[i] +=1; 
+                        peak_width[i] +=1;
                     } else {
                         if (i > 20 && peak_height[i] > 50 && peak_width[i] > 3 && peak_width[i] < 80){
                             console.log("freq " + i +" height " + peak_height[i] + " width " +  [i] + " peak " + prev_frequency[i]);
@@ -549,7 +510,6 @@
 
           ga('create', 'UA-49392875-2', 'callum.com');
           ga('send', 'pageview');
-
         </script>
         <div id="title">Detail - How many subdivisions</br>
         Roughness - Variance between points</br>
@@ -558,7 +518,6 @@
 
     <canvas id="canvas" width="1000" height="325" style="display: block;"></canvas>
     <script type="text/javascript">
-
     // create the audio context (chrome only for now)
     // create the audio context (chrome only for now)
     if (! window.AudioContext) {
@@ -742,7 +701,7 @@
             //  console.log([i,value])
         }
     };
-
 </script>
+
     </body>
 </html>
