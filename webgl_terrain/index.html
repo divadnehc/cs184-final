@@ -386,7 +386,10 @@
                 //add a FUCKING ROCKET
                 var loader = new THREE.STLLoader();
                 loader.load('./lowPolyRocket.stl', function (geometry) {
-                  var material = new THREE.MeshNormalMaterial()
+                  var material = new THREE.MeshPhongMaterial({
+                    color: 0x7592FB,
+                    shading:THREE.FlatShading
+                  })
                   rocket = new THREE.Mesh(geometry, material);
                   rocket.rotation.set(0, 3.14 * .5, 0)
                   rocket.position.set(-200, 250, 0);
