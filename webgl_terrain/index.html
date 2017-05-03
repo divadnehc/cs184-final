@@ -41,12 +41,14 @@
         <script type="text/javascript" src="js/three.r67/TrackballControls.js"></script>
         <script type="text/javascript" src="js/three.r67/Detector.js"></script>
         <script type="text/javascript" src="js/dat.gui.js"></script>
+        <script type="text/javascript" src="js/STLLoader.js"></script>
         <script type="text/javascript">
             var camera, scene, renderer, controls;
             var terrain_mesh, water_mesh, water_height = 0.25;
             var terrain_detail = 5, terrain_roughness = 3.8;
             terrain_roughness = 0.0;
             var terrain;
+            var rocket;
             var audio_variance = 0.95;
             var vary_offset = 5;
             var animating = false;
@@ -364,6 +366,16 @@
                 var ambient_light = new THREE.AmbientLight(0xcccccc);
                 scene.add(ambient_light);
 
+                //add a FUCKING ROCKET
+                var loader = new THREE.STLLoader();
+                loader.load('./lowPolyRocket.stl', function (geometry) {
+                  var material = new THREE.MeshNormalMaterial()
+                  rocket = new THREE.Mesh(geometry, material);
+                  rocket.rotation.set(0, 3.14 * .5, 0)
+                  rocket.position.set(-200, 250, 0);
+                  scene.add(rocket);
+                })
+
                 var gui = new dat.GUI();
                 gui.add(this, 'terrain_detail', 2, 8).name("Detail").listen().onFinishChange(function(value) {
                     generate();
@@ -412,11 +424,15 @@
                 camera.updateProjectionMatrix();
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
-
+            var counter = 0;
             function animate() {
+                counter += 4;
                 requestAnimationFrame(animate);
                 controls.update();
                 terrain_detail = parseInt(terrain_detail);
+                if (rocket) {
+                  rocket.position.y += .25 * Math.sin(counter * Math.PI / 180);
+                }
                 renderer.render(scene, camera);
             }
 
@@ -501,15 +517,6 @@
             init();
             generate();
             animate();
-        </script>
-        <script>
-          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-          ga('create', 'UA-49392875-2', 'callum.com');
-          ga('send', 'pageview');
         </script>
         <div id="title">Detail - How many subdivisions</br>
         Roughness - Variance between points</br>
