@@ -44,6 +44,7 @@
             var camera, scene, renderer, controls;
             var terrain_mesh, water_mesh, water_height = 0.25;
             var terrain_detail = 5, terrain_roughness = 3.8;
+            terrain_roughness = 0.0;
             var terrain;
             var audio_variance = 0.95;
             var vary_offset = 5;
@@ -53,17 +54,20 @@
             var song = "harder.mp3";
             var in_switch = false;
             var high_freq = false;
+            var pin_corners = true;
             var true_vary = false;
             var peak_width = new Array(256).fill(0);
             var peak_height = new Array(256).fill(0);
             var prev_frequency = new Array(256).fill(0);
             var prev_max = 0;
+            var fourier_animating = false;
 
             function Terrain(detail) {
                 this.size = Math.pow(2, detail) + 1;
                 this.max = this.size - 1;
                 this.map = new Float32Array(this.size * this.size);
                 this.vary_map = new Float32Array(this.size * this.size);
+                console.log("New terrain size: " + this.size)
             }
 
             Terrain.prototype.get = function (x, y) {
@@ -82,7 +86,15 @@
             Terrain.prototype.vary_set = function (x, y, val) {
                 this.vary_map[x + this.size * y] = val;
             };
+            Terrain.prototype.pin_corners = function () {
+                var self = this;
+                terrain = this;
 
+                this.set(0, 0, 0);
+                this.set(this.max, 0, 0);
+                this.set(this.max, this.max, 0);
+                this.set(0, this.max, 0);
+            }
             Terrain.prototype.generate = function (roughness) {
                 var self = this;
                 terrain = this;
@@ -141,6 +153,40 @@
                     ]);
                     self.set(x, y, ave + offset);
                 }
+            };
+
+            Terrain.prototype.fourier_animate = function(volume, frequencies) {
+                var terrain_geometry = new THREE.PlaneGeometry(512, 512, this.size - 1, this.size - 1);
+                for (var y = 0; y < this.size; y++) {
+                    for (var x = 0; x < this.size; x++) {
+                        terrain_geometry.vertices[y * this.size + x].z = this.get(x,y);
+                    }
+                }
+                for (var x = 0; x < this.size -1; x++) {
+                    for (var y = 0; y < this.size; y++) {
+                        //console.log(this.get(x,y));
+                        //console.log("-");
+                        terrain_geometry.vertices[y * this.size + x].z = this.get(x+1,y);
+                        this.set(x,y,terrain_geometry.vertices[y * this.size + x ].z);
+                    }
+                }
+                for (var y = 0; y < this.size; y++) {
+                    var x = this.size - 1;
+                    terrain_geometry.vertices[y * this.size + x].z = frequencies[y];
+                    this.set(x,y,frequencies[y]);
+                }
+
+                terrain_geometry.computeFaceNormals();
+                terrain_geometry.computeVertexNormals();
+
+                scene.remove(terrain_mesh);
+
+                terrain_material  = new THREE.MeshNormalMaterial();
+                //terrain_material  = new THREE.MeshToonMaterial();
+
+                terrain_mesh = new THREE.Mesh(terrain_geometry, terrain_material);
+                terrain_mesh.rotation.x = -Math.PI / 2.0;
+                scene.add(terrain_mesh);
             };
             Terrain.prototype.alter_vary = function (volume, frequencies) {
                 var roughness = volume / 500;
@@ -356,6 +402,7 @@
                 gui.add(this, "beat_switching").name("Beat Switching");
                 gui.add(this, "high_freq").name("High Frequencies");
                 gui.add(this, "alter_vary").name("Alter Vary");
+                gui.add(this, "fourier_animating").name("Fourier Animate");
                 //gui.add(this, 'water_height', 0, 1.0).name("Water Height").onChange(function(value) {
                     //water_mesh.scale.z = water_height;
                 //});;
@@ -390,6 +437,9 @@
                 terrain.generate(terrain_roughness);
                 terrain.addMesh();
             };
+            function fourier_animate(volume,frequencies){
+                terrain.fourier_animate(volume,frequencies);
+            }
             function vary(volume, frequencies) {
                 //console.log(volume)
                 if (alter_vary){
@@ -397,6 +447,9 @@
                 } 
                 if (true_vary){
                     terrain.vary(volume, frequencies);
+                }
+                if (pin_corners){
+                    terrain.pin_corners();
                 }
                 if (beat_switching && frequencies[0] > 253.0 && ! in_switch){
                     in_switch = true;
@@ -595,6 +648,9 @@
     javascriptNode.onaudioprocess = function() {
 
         // get the average for the first channel
+        //console.log("Freq: " + analyser.frequencyBinCount);
+        var mesh_array = new Uint8Array(Math.pow(2, terrain_detail) + 1);
+        analyser.getByteFrequencyData(mesh_array);
         var array =  new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
 
@@ -623,11 +679,15 @@
         // create the meters
         ctx.fillRect(0,170-average,25,170+average);
         ctx.fillRect(30,170-average2,25,170+average2);
+        console.log("Array Length: " + mesh_array.length);
         if (animating) {
             vary((average + average2) / 2, array);
         }
         if (high_freq)  {
             freq_analysis((average + average2) / 2, array);
+        }
+        if (fourier_animating) {
+            fourier_animate((average + average2) / 2, mesh_array);
         }
 
     }
