@@ -51,7 +51,7 @@
             var animating = false;
             var alter_vary = false;
             var beat_switching = false;
-            var song = "harder.mp3";
+            var song = "ignition.mp3";
             var in_switch = false;
             var high_freq = false;
             var pin_corners = true;
@@ -67,7 +67,7 @@
                 this.max = this.size - 1;
                 this.map = new Float32Array(this.size * this.size);
                 this.vary_map = new Float32Array(this.size * this.size);
-                console.log("New terrain size: " + this.size)
+                //console.log("New terrain size: " + this.size)
             }
 
             Terrain.prototype.get = function (x, y) {
@@ -190,7 +190,7 @@
             };
             Terrain.prototype.alter_vary = function (volume, frequencies) {
                 var roughness = volume / 500;
-                console.log(roughness);
+                //console.log(roughness);
                 var self = this;
                 terrain = this;
 
@@ -312,7 +312,7 @@
             }
             Terrain.prototype.vary = function (volume, frequencies) {
                 var self = this;
-                console.log(frequencies[frequencies.length * 2 / 4]);
+                //console.log(frequencies[frequencies.length * 2 / 4]);
                 var volume_offset = volume / 65.0;
                 var terrain_geometry = new THREE.PlaneGeometry(512, 512, this.size - 1, this.size - 1);
                 for (var y = 0; y < this.size; y++) {
@@ -679,7 +679,7 @@
         // create the meters
         ctx.fillRect(0,170-average,25,170+average);
         ctx.fillRect(30,170-average2,25,170+average2);
-        console.log("Array Length: " + mesh_array.length);
+        //console.log("Array Length: " + mesh_array.length);
         if (animating) {
             vary((average + average2) / 2, array);
         }
