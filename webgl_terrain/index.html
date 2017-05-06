@@ -1,5 +1,4 @@
 <!-- very neat terrain generator from here: http://www.playfuljs.com/realistic-terrain-in-130-lines/  -->
-<!-- WebGL version by me  -->
 <!DOCTYPE html>
 <html>
     <head>
@@ -204,7 +203,7 @@
                 //terrain_material  = new THREE.MeshToonMaterial();
                 //terrain_material = new THREE.MeshBasicMaterial( { vertexColors: THREE.FaceColors });
 
-                terrain_material = new THREE.MeshPhongMaterial( { vertexColors: THREE.VertexColors, shading:THREE.FlatShading });
+                terrain_material = new THREE.MeshPhongMaterial( { vertexColors: THREE.FaceColors, shading:THREE.FlatShading });
                 terrain_mesh = new THREE.Mesh(terrain_geometry, terrain_material);
                 terrain_mesh.rotation.x = -Math.PI / 2.0;
                 scene.add(terrain_mesh);
@@ -360,12 +359,12 @@
                 scene = new THREE.Scene();
                 scene.fog = new THREE.Fog(0xBEC19D, 0.015, 900);
 
-                camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000);
-                camera.zoom = 0.3;
+                camera = new THREE.PerspectiveCamera(46.4, window.innerWidth / window.innerHeight, 1, 1000);
+                camera.zoom = 0.7;
 
                 var ambient_light = new THREE.AmbientLight(0xcccccc);
                 scene.add(ambient_light);
-                var hemisphereLight = new THREE.HemisphereLight(0xBEC19D,0x000000, .9)
+                var hemisphereLight = new THREE.HemisphereLight(0xB5D4B7,0x74909C, .9)
                 shadowLight = new THREE.DirectionalLight(0xffffff, .9);
                 shadowLight.position.set(150, 350, 350);
                 shadowLight.castShadow = true;
